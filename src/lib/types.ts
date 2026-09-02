@@ -60,3 +60,5 @@ export const CATEGORY_ORDER: QuestionCategory[] = [
 ];
 
 export type PackStatus = "in_progress" | "interview_ready";
+
+export const INTERVIEW_READY_THRESHOLD = 70;

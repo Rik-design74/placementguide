@@ -2,18 +2,16 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { TRACK_LABELS, type Track } from "@/lib/types";
+import { TRACK_LABELS, type PackStatus, type Track } from "@/lib/types";
 
 export interface PackCardData {
   id: string;
   title: string;
   company: string | null;
   track: Track;
-  status: "in_progress" | "interview_ready";
+  status: PackStatus;
   practicedCount: number;
   totalQuestions: number;
-  updatedAt: string;
 }
 
 export default function PackCard({
@@ -21,31 +19,13 @@ export default function PackCard({
   onDelete,
 }: {
   pack: PackCardData;
-  /** Override delete behavior (used in local mode instead of the /api/packs DELETE route). */
-  onDelete?: (id: string) => void | Promise<void>;
+  onDelete: (id: string) => void;
 }) {
-  const router = useRouter();
   const [confirming, setConfirming] = useState(false);
-  const [deleting, setDeleting] = useState(false);
 
   const percent = pack.totalQuestions
     ? Math.round((pack.practicedCount / pack.totalQuestions) * 100)
     : 0;
-
-  async function handleDelete() {
-    setDeleting(true);
-    if (onDelete) {
-      await onDelete(pack.id);
-      return;
-    }
-    const res = await fetch(`/api/packs/${pack.id}`, { method: "DELETE" });
-    if (res.ok) {
-      router.refresh();
-    } else {
-      setDeleting(false);
-      setConfirming(false);
-    }
-  }
 
   return (
     <div className="rounded-xl border border-line bg-paper-raised p-5 flex flex-col gap-4 shadow-sm hover:shadow-md transition-shadow">
@@ -73,29 +53,22 @@ export default function PackCard({
           </span>
         </div>
         <div className="h-1.5 w-full rounded-full bg-line overflow-hidden">
-          <div
-            className="h-full rounded-full bg-gold"
-            style={{ width: `${percent}%` }}
-          />
+          <div className="h-full rounded-full bg-gold" style={{ width: `${percent}%` }} />
         </div>
       </div>
 
       <div className="flex items-center justify-between mt-auto pt-2 border-t border-line">
-        <Link
-          href={`/prep/${pack.id}`}
-          className="text-sm font-semibold text-ink hover:text-gold"
-        >
+        <Link href={`/prep/${pack.id}`} className="text-sm font-semibold text-ink hover:text-gold">
           Open pack →
         </Link>
 
         {confirming ? (
           <div className="flex items-center gap-2">
             <button
-              onClick={handleDelete}
-              disabled={deleting}
-              className="text-xs font-semibold text-danger hover:underline disabled:opacity-60"
+              onClick={() => onDelete(pack.id)}
+              className="text-xs font-semibold text-danger hover:underline"
             >
-              {deleting ? "Deleting…" : "Confirm delete"}
+              Confirm delete
             </button>
             <button
               onClick={() => setConfirming(false)}
@@ -118,7 +91,7 @@ export default function PackCard({
   );
 }
 
-function StatusBadge({ status }: { status: "in_progress" | "interview_ready" }) {
+function StatusBadge({ status }: { status: PackStatus }) {
   if (status === "interview_ready") {
     return (
       <span className="shrink-0 inline-flex items-center rounded-full bg-success/10 text-success px-2.5 py-1 text-xs font-semibold">

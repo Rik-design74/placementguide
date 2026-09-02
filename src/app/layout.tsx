@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     "Paste a job description and your resume, pick a role track, and get a saved interview prep pack: fit summary, gaps, 15 tailored questions, and what to ask them.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="en"
