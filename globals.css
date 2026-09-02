@@ -1,0 +1,85 @@
+@import "tailwindcss";
+
+:root {
+  --color-ink: #0d1b2e;
+  --color-ink-soft: #1c3050;
+  --color-paper: #faf7f0;
+  --color-paper-raised: #ffffff;
+  --color-gold: #c8912a;
+  --color-gold-soft: #f0d9ab;
+  --color-line: #e4ddcb;
+  --color-success: #2f7d5a;
+  --color-danger: #b0402c;
+}
+
+@theme inline {
+  --color-ink: var(--color-ink);
+  --color-ink-soft: var(--color-ink-soft);
+  --color-paper: var(--color-paper);
+  --color-paper-raised: var(--color-paper-raised);
+  --color-gold: var(--color-gold);
+  --color-gold-soft: var(--color-gold-soft);
+  --color-line: var(--color-line);
+  --color-success: var(--color-success);
+  --color-danger: var(--color-danger);
+  --font-display: var(--font-fraunces);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+h1,
+h2,
+h3,
+.font-display {
+  font-family: var(--font-display), ui-serif, Georgia, serif;
+}
+
+::selection {
+  background: var(--color-gold-soft);
+  color: var(--color-ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.grain-bg {
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(13, 27, 46, 0.06) 1px, transparent 0);
+  background-size: 22px 22px;
+}
+
+@media print {
+  nav,
+  footer,
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: white;
+    color: black;
+  }
+
+  .print-card {
+    box-shadow: none !important;
+    border: 1px solid #ccc !important;
+    break-inside: avoid;
+  }
+
+  a[href]::after {
+    content: "";
+  }
+}
