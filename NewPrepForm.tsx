@@ -3,6 +3,9 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { TRACKS, type Track } from "@/lib/types";
+import { IS_LOCAL_MODE } from "@/lib/mode";
+import { localInsertPack } from "@/lib/local/db";
+import { useLocalSession } from "@/lib/local/useLocalSession";
 
 const MIN_LENGTH = 200;
 
@@ -20,6 +23,7 @@ const LOADING_MESSAGES = [
 
 export default function NewPrepForm() {
   const router = useRouter();
+  const localSession = useLocalSession("/login?next=/prep/new", IS_LOCAL_MODE);
   const [company, setCompany] = useState("");
   const [track, setTrack] = useState<Track>("consulting");
   const [jdText, setJdText] = useState("");
@@ -67,11 +71,37 @@ export default function NewPrepForm() {
         return;
       }
 
+      if (IS_LOCAL_MODE) {
+        if (!localSession || localSession === "loading") {
+          setError("You're not logged in.");
+          setLoading(false);
+          return;
+        }
+        const row = localInsertPack({
+          user_id: localSession.id,
+          title: data.title,
+          company: company || null,
+          track,
+          jd_text: jdText,
+          resume_text: resumeText,
+          pack: data.pack,
+          practiced: {},
+          notes: {},
+          status: "in_progress",
+        });
+        router.push(`/prep/${row.id}`);
+        return;
+      }
+
       router.push(`/prep/${data.id}`);
     } catch {
       setError("Network error. Please try again.");
       setLoading(false);
     }
+  }
+
+  if (IS_LOCAL_MODE && (localSession === "loading" || !localSession)) {
+    return null;
   }
 
   if (loading) {

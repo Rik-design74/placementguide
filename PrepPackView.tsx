@@ -24,6 +24,7 @@ export default function PrepPackView({
   pack,
   initialPracticed,
   initialNotes,
+  onPatch,
 }: {
   id: string;
   initialTitle: string;
@@ -33,6 +34,8 @@ export default function PrepPackView({
   pack: Pack;
   initialPracticed: Record<string, boolean>;
   initialNotes: Record<string, string>;
+  /** Override save behavior (used in local mode instead of the /api/packs PATCH route). */
+  onPatch?: (body: Record<string, unknown>) => void | Promise<void>;
 }) {
   const [title, setTitle] = useState(initialTitle);
   const [editingTitle, setEditingTitle] = useState(false);
@@ -54,6 +57,10 @@ export default function PrepPackView({
   const canMarkReady = percent >= INTERVIEW_READY_THRESHOLD && status_ !== "interview_ready";
 
   async function patchPack(body: Record<string, unknown>) {
+    if (onPatch) {
+      await onPatch(body);
+      return;
+    }
     await fetch(`/api/packs/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },

@@ -1,18 +1,24 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
-import { logoutAction } from "@/lib/actions";
-import { IS_LOCAL_MODE } from "@/lib/mode";
-import LocalNavbar from "@/components/LocalNavbar";
+import { useRouter } from "next/navigation";
+import { localGetSession, localSignOut, type LocalSession } from "@/lib/local/db";
 
-export default async function Navbar() {
-  if (IS_LOCAL_MODE) {
-    return <LocalNavbar />;
+export default function LocalNavbar() {
+  const router = useRouter();
+  const [session, setSession] = useState<LocalSession | null>(null);
+
+  useEffect(() => {
+    queueMicrotask(() => setSession(localGetSession()));
+  }, []);
+
+  function handleLogout() {
+    localSignOut();
+    setSession(null);
+    router.push("/");
+    router.refresh();
   }
-
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
   return (
     <nav className="border-b border-line bg-paper-raised/80 backdrop-blur sticky top-0 z-40">
@@ -25,7 +31,10 @@ export default async function Navbar() {
         </Link>
 
         <div className="flex items-center gap-2 sm:gap-4">
-          {user ? (
+          <span className="hidden sm:inline-flex items-center rounded-full bg-gold-soft text-ink-soft px-2.5 py-1 text-xs font-semibold">
+            Local demo mode
+          </span>
+          {session ? (
             <>
               <Link
                 href="/dashboard"
@@ -39,14 +48,13 @@ export default async function Navbar() {
               >
                 New Prep
               </Link>
-              <form action={logoutAction}>
-                <button
-                  type="submit"
-                  className="px-3 py-2 text-sm font-medium text-ink-soft hover:text-ink rounded-md"
-                >
-                  Log out
-                </button>
-              </form>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="px-3 py-2 text-sm font-medium text-ink-soft hover:text-ink rounded-md"
+              >
+                Log out
+              </button>
             </>
           ) : (
             <>

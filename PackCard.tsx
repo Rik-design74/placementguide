@@ -16,7 +16,14 @@ export interface PackCardData {
   updatedAt: string;
 }
 
-export default function PackCard({ pack }: { pack: PackCardData }) {
+export default function PackCard({
+  pack,
+  onDelete,
+}: {
+  pack: PackCardData;
+  /** Override delete behavior (used in local mode instead of the /api/packs DELETE route). */
+  onDelete?: (id: string) => void | Promise<void>;
+}) {
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -27,6 +34,10 @@ export default function PackCard({ pack }: { pack: PackCardData }) {
 
   async function handleDelete() {
     setDeleting(true);
+    if (onDelete) {
+      await onDelete(pack.id);
+      return;
+    }
     const res = await fetch(`/api/packs/${pack.id}`, { method: "DELETE" });
     if (res.ok) {
       router.refresh();

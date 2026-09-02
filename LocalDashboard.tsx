@@ -1,46 +1,48 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { useLocalSession } from "@/lib/local/useLocalSession";
+import { localDeletePack, localListPacks, type LocalPackRow } from "@/lib/local/db";
 import PackCard, { type PackCardData } from "@/components/PackCard";
-import type { Pack } from "@/lib/types";
-import { IS_LOCAL_MODE } from "@/lib/mode";
-import LocalDashboard from "@/components/LocalDashboard";
 
-export default async function DashboardPage() {
-  if (IS_LOCAL_MODE) {
-    return <LocalDashboard />;
+function toCardData(row: LocalPackRow): PackCardData {
+  const totalQuestions = row.pack?.questions?.length ?? 0;
+  const practicedCount = Object.values(row.practiced ?? {}).filter(Boolean).length;
+  return {
+    id: row.id,
+    title: row.title,
+    company: row.company,
+    track: row.track,
+    status: row.status,
+    practicedCount,
+    totalQuestions,
+    updatedAt: row.updated_at,
+  };
+}
+
+export default function LocalDashboard() {
+  const session = useLocalSession("/login?next=/dashboard");
+  const [packs, setPacks] = useState<PackCardData[] | null>(null);
+
+  useEffect(() => {
+    if (session && session !== "loading") {
+      queueMicrotask(() => setPacks(localListPacks(session.id).map(toCardData)));
+    }
+  }, [session]);
+
+  function handleDelete(id: string) {
+    localDeletePack(id);
+    setPacks((prev) => (prev ?? []).filter((p) => p.id !== id));
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login?next=/dashboard");
+  if (session === "loading" || packs === null) {
+    return (
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 py-10 sm:py-14">
+        <p className="text-ink-soft">Loading…</p>
+      </div>
+    );
   }
-
-  const { data: rows, error } = await supabase
-    .from("prep_packs")
-    .select("id, title, company, track, status, pack, practiced, updated_at")
-    .order("updated_at", { ascending: false });
-
-  const packs: PackCardData[] = (rows ?? []).map((row) => {
-    const pack = row.pack as Pack;
-    const totalQuestions = pack?.questions?.length ?? 0;
-    const practicedMap = (row.practiced ?? {}) as Record<string, boolean>;
-    const practicedCount = Object.values(practicedMap).filter(Boolean).length;
-    return {
-      id: row.id,
-      title: row.title,
-      company: row.company,
-      track: row.track,
-      status: row.status,
-      practicedCount,
-      totalQuestions,
-      updatedAt: row.updated_at,
-    };
-  });
 
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6 py-10 sm:py-14">
@@ -61,10 +63,6 @@ export default async function DashboardPage() {
         </Link>
       </div>
 
-      {error && (
-        <p className="text-danger mb-6">Could not load your packs. Please refresh.</p>
-      )}
-
       {packs.length === 0 ? (
         <div className="rounded-xl border border-dashed border-line bg-paper-raised p-10 text-center">
           <p className="font-display text-xl text-ink mb-2">No prep packs yet</p>
@@ -82,7 +80,7 @@ export default async function DashboardPage() {
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {packs.map((pack) => (
-            <PackCard key={pack.id} pack={pack} />
+            <PackCard key={pack.id} pack={pack} onDelete={handleDelete} />
           ))}
         </div>
       )}
