@@ -1,25 +1,25 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useLocalSession } from "@/lib/local/useLocalSession";
-import { localGetPack, localUpdatePack, type LocalPackRow } from "@/lib/local/db";
+import { useParams, useRouter } from "next/navigation";
+import { useSession, getPack, type PackRow } from "@/lib/db";
 import PrepPackView from "@/components/PrepPackView";
 
-export default function LocalPrepPackLoader({ id }: { id: string }) {
+export default function PrepPackPage() {
+  const params = useParams<{ id: string }>();
   const router = useRouter();
-  const session = useLocalSession(`/login?next=/prep/${id}`);
-  const [row, setRow] = useState<LocalPackRow | null | "loading">("loading");
+  const session = useSession(`/login?next=/prep/${params.id}`);
+  const [row, setRow] = useState<PackRow | null | "loading">("loading");
 
   useEffect(() => {
     if (!session || session === "loading") return;
-    const found = localGetPack(id);
-    if (!found || found.user_id !== session.id) {
+    const found = getPack(params.id);
+    if (!found || found.userId !== session.id) {
       router.replace("/dashboard");
       return;
     }
     queueMicrotask(() => setRow(found));
-  }, [session, id, router]);
+  }, [session, params.id, router]);
 
   if (session === "loading" || row === "loading" || row === null) {
     return (
@@ -39,9 +39,6 @@ export default function LocalPrepPackLoader({ id }: { id: string }) {
       pack={row.pack}
       initialPracticed={row.practiced}
       initialNotes={row.notes}
-      onPatch={(body) => {
-        localUpdatePack(row.id, body as Parameters<typeof localUpdatePack>[1]);
-      }}
     />
   );
 }

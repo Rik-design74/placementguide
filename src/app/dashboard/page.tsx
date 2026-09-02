@@ -2,37 +2,33 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useLocalSession } from "@/lib/local/useLocalSession";
-import { localDeletePack, localListPacks, type LocalPackRow } from "@/lib/local/db";
+import { useSession, listPacks, deletePack } from "@/lib/db";
 import PackCard, { type PackCardData } from "@/components/PackCard";
 
-function toCardData(row: LocalPackRow): PackCardData {
-  const totalQuestions = row.pack?.questions?.length ?? 0;
-  const practicedCount = Object.values(row.practiced ?? {}).filter(Boolean).length;
-  return {
-    id: row.id,
-    title: row.title,
-    company: row.company,
-    track: row.track,
-    status: row.status,
-    practicedCount,
-    totalQuestions,
-    updatedAt: row.updated_at,
-  };
-}
-
-export default function LocalDashboard() {
-  const session = useLocalSession("/login?next=/dashboard");
+export default function DashboardPage() {
+  const session = useSession("/login?next=/dashboard");
   const [packs, setPacks] = useState<PackCardData[] | null>(null);
 
   useEffect(() => {
     if (session && session !== "loading") {
-      queueMicrotask(() => setPacks(localListPacks(session.id).map(toCardData)));
+      queueMicrotask(() => {
+        setPacks(
+          listPacks(session.id).map((row) => ({
+            id: row.id,
+            title: row.title,
+            company: row.company,
+            track: row.track,
+            status: row.status,
+            practicedCount: Object.values(row.practiced).filter(Boolean).length,
+            totalQuestions: row.pack.questions.length,
+          })),
+        );
+      });
     }
   }, [session]);
 
   function handleDelete(id: string) {
-    localDeletePack(id);
+    deletePack(id);
     setPacks((prev) => (prev ?? []).filter((p) => p.id !== id));
   }
 
@@ -67,8 +63,8 @@ export default function LocalDashboard() {
         <div className="rounded-xl border border-dashed border-line bg-paper-raised p-10 text-center">
           <p className="font-display text-xl text-ink mb-2">No prep packs yet</p>
           <p className="text-ink-soft mb-6 max-w-md mx-auto">
-            Paste a job description and your resume to generate your first tailored
-            interview prep pack.
+            Paste a job description and your resume to generate your first tailored interview
+            prep pack.
           </p>
           <Link
             href="/prep/new"
